@@ -1,0 +1,25 @@
+# Node.js (for backend_server and frontend_client)
+node_modules/
+
+# Python (for crawler)
+venv/
+
+# IDE Files (VSCode, etc.)
+.vscode/
+
+# Operating System Files (MacOS/Windows)
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Build directories
+/dist
+/build
+
+# Python specific (if using)
+__pycache__/
+
+# Logs
+*.log
