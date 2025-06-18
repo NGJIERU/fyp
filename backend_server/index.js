@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const Book = require('./models/Book');
 
 const corsOptions = {
-  origin: ["http://localhost:5174"]
+  origin: ["http://localhost:5173"]
 };
 
 app.use(cors(corsOptions));
@@ -15,7 +15,13 @@ app.use(express.json());
 
 app.get("/api/books", async (req, res) => {
   try {
-    const books = await Book.find({});
+    const { category } = req.query;
+    
+    // If category is passed, filter by category
+    const query = category ? { category } : {}; // Empty object means no filter
+    const books = await Book.find(query);  // Fetch books based on category or all books
+    console.log("Fetched books from DB:", books);  // Log the books
+    
     res.set('Cache-Control', 'no-store'); 
     res.status(200).json(books);
   } catch (error) {
