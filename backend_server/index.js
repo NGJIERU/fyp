@@ -20,7 +20,6 @@ app.get("/api/books", async (req, res) => {
     // If category is passed, filter by category
     const query = category ? { category } : {}; // Empty object means no filter
     const books = await Book.find(query);  // Fetch books based on category or all books
-    console.log("Fetched books from DB:", books);  // Log the books
     
     res.set('Cache-Control', 'no-store'); 
     res.status(200).json(books);

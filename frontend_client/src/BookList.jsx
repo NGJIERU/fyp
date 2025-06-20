@@ -1,77 +1,89 @@
 import React, { useState, useEffect } from 'react';
+import { fetchBooksByCategory } from './services/bookService';
+import { getStarValue } from './utils/ratingUtils';
+import RecommendationPanel from './components/RecommendationPanel';
+
+const categoryRelations = {
+  Poetry: 'Fiction',
+  Fiction: 'History',
+  Business: 'Science',
+  Science: 'History',
+  History: 'Poetry',
+};
 
 const BookList = () => {
   const [books, setBooks] = useState([]);
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('Poetry');
   const [loading, setLoading] = useState(false);
+  const [recommendation, setRecommendation] = useState('');
+  const [topBooks, setTopBooks] = useState([]);
 
-  const categories = ['Poetry', 'Fiction', 'Business', 'Travel', 'History'];
+  const categories = ['Poetry', 'Fiction', 'Business', 'Science', 'History'];
 
   useEffect(() => {
-    fetchBooks();
+    fetchData();
+    suggestRecommendation();
   }, [category]);
 
-  const fetchBooks = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-        const response = await fetch(`http://localhost:8080/api/books?category=${category || ""}`);
-        const data = await response.json();
-      console.log('First 5 books:', data.slice(0, 5));
+      const data = await fetchBooksByCategory(category);
       setBooks(data);
+
+      const topRated = data.filter(book => getStarValue(book.stars) >= 4);
+      const fallback = [...data].sort((a, b) => parseInt(b.num_reviews) - parseInt(a.num_reviews));
+      setTopBooks(topRated.length > 0 ? topRated.slice(0, 3) : fallback.slice(0, 3));
     } catch (error) {
-      console.error("Error fetching books:", error);
+      console.error("Failed to fetch books:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  const suggestRecommendation = () => {
+    setRecommendation(categoryRelations[category] || '');
+  };
+
   return (
-    <div className="container mx-auto my-8">
-      {/* Category Dropdown */}
-      <div className="mb-4">
-        <label htmlFor="category" className="block text-lg font-medium text-gray-700">Select Category:</label>
-        <select
-          id="category"
-          name="category"
-          className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">📚 Book List</h1>
+
+      <div className="mb-4 space-x-2">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            className={`px-4 py-2 rounded ${cat === category ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            onClick={() => setCategory(cat)}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
-      {/* Book Grid */}
       {loading ? (
         <p>Loading books...</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {books.map((book) => (
-            <div key={book.url} className="border rounded-lg p-4">
-              <img src={book.image_url} alt={book.title} className="w-full h-64 object-cover mb-4 rounded-md" />
-              <h3 className="text-xl font-semibold">{book.title}</h3>
-              <p className="text-gray-600 text-sm">{book.category}</p>
-              <p className="text-gray-800">
-                {/* Check if description exists, if not display fallback text */}
-                {book.description ? book.description.slice(0, 100) : 'No description available...'}...
-              </p>
-              <p className="text-lg font-bold text-gray-900 mt-2">{book.price_excl_tax}</p>
-              <a
-                href={book.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-block bg-blue-500 text-white px-6 py-2 rounded-md"
-              >
-                View Details
-              </a>
-            </div>
+            <li key={book.title} className="border p-4 rounded shadow">
+              <h2 className="text-lg font-semibold">{book.title}</h2>
+              <p className="italic">{book.product_type}</p>
+              <p>Rating: {book.stars.replace('star-rating ', '')}</p>
+              <p>Reviews: {book.num_reviews}</p>
+              <p className="text-sm mt-1">{book.description?.slice(0, 100)}...</p>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
+
+      <RecommendationPanel
+        category={category}
+        recommendation={recommendation}
+        topBooks={topBooks}
+      />
     </div>
   );
 };
 
-export default BookList; 
+export default BookList;
